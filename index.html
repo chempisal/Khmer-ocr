@@ -21,7 +21,7 @@
                 <h1 class="text-xl font-bold tracking-wide">NextOCR Khmer</h1>
                 <p class="text-[10px] text-blue-200">ប្រព័ន្ធស្រង់អត្ថបទឆ្លាតវៃ</p>
             </div>
-            <span class="text-xs bg-blue-700/60 px-2.5 py-1 rounded-full border border-blue-400/30 font-mono">v1.2.0</span>
+            <span class="text-xs bg-blue-700/60 px-2.5 py-1 rounded-full border border-blue-400/30 font-mono">v1.3.0</span>
         </div>
     </header>
 
@@ -37,20 +37,20 @@
         </div>
 
         <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200/60 space-y-4">
-            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">២. ផ្ទុកឡើងរូបភាព ឬថតរូប</span>
+            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">២. ជ្រើសរើសរូបភាពពីឧបករណ៍</span>
             
             <label for="imageInput" class="w-full flex flex-col items-center justify-center h-44 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 active:bg-gray-100/70 transition-all">
                 <div class="flex flex-col items-center justify-center text-center px-4">
                     <div class="bg-blue-50 p-3 rounded-full mb-3 text-blue-600">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
                     </div>
-                    <p class="text-sm font-bold text-gray-700">ចុចទីនេះដើម្បី Upload ឬថតរូប</p>
-                    <p class="text-xs text-gray-400 mt-1">គាំទ្រឯកសារ JPG, PNG</p>
+                    <p class="text-sm font-bold text-gray-700">ចុចទីនេះដើម្បីជ្រើសរើសឯកសាររូបភាព</p>
+                    <p class="text-xs text-gray-400 mt-1">គាំទ្រឯកសារ JPG, PNG (មិនមែនសម្រាប់ថតផ្ទាល់ទេ)</p>
                 </div>
-                <input id="imageInput" type="file" accept="image/*" capture="environment" class="hidden" />
+                <input id="imageInput" type="file" accept="image/*" class="hidden" />
             </label>
             
-            <div id="previewContainer" class="hidden border-t border-gray-100 pt-4 animate-fade-in">
+            <div id="previewContainer" class="hidden border-t border-gray-100 pt-4">
                 <p class="text-xs font-bold text-gray-400 mb-2">រូបភាពដែលបានជ្រើសរើស៖</p>
                 <div class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm max-h-52 flex justify-center bg-gray-50">
                     <img id="imagePreview" src="#" alt="Preview" class="object-contain max-h-52 w-full">
@@ -88,24 +88,19 @@
         const langSelect = document.getElementById('langSelect');
         const copyBtn = document.getElementById('copyBtn');
 
-        // ១. ចាប់យកព្រឹត្តិការណ៍នៅពេលអ្នកប្រើប្រាស់ផ្ទុកឡើងរូបភាព (Upload)
         imageInput.addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (!file) return;
 
             const reader = new FileReader();
             reader.onload = function(event) {
-                // បង្ហាញរូបភាព Preview
                 imagePreview.src = event.target.result;
                 previewContainer.classList.remove('hidden');
-                
-                // ចាប់ផ្តើមដំណើរការបំប្លែងរូបភាពទៅជាអក្សរ
                 processOCR(event.target.result);
             }
             reader.readAsDataURL(file);
         });
 
-        // ២. អនុគមន៍ដំណើរការបំប្លែង (OCR Processing)
         function processOCR(imageSrc) {
             statusText.innerText = "កំពុងរៀបចំ...";
             statusText.className = "text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md";
@@ -113,10 +108,9 @@
             resultText.value = "";
             progressBar.style.width = "0%";
 
-            // ហៅការប្រើប្រាស់ Tesseract.js 
             Tesseract.recognize(
                 imageSrc,
-                langSelect.value, // ភាសាដែលបានជ្រើសរើស (khm ឬ eng)
+                langSelect.value,
                 { 
                     logger: m => {
                         if (m.status === 'recognizing text') {
@@ -127,7 +121,6 @@
                     }
                 }
             ).then(({ data: { text } }) => {
-                // ករណីជោគជ័យ
                 statusText.innerText = "ជោគជ័យ!";
                 statusText.className = "text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md";
                 progressContainer.classList.add('hidden');
@@ -138,16 +131,14 @@
                     resultText.value = text.trim();
                 }
             }).catch(err => {
-                // ករណីមានកំហុសបច្ចេកទេស
                 console.error(err);
                 statusText.innerText = "បរាជ័យ!";
                 statusText.className = "text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md";
                 progressContainer.classList.add('hidden');
-                resultText.value = "មានកំហុសក្នុងការអានរូបភាព។ សូមប្រាកដថាទូរស័ព្ទរបស់អ្នកមានអ៊ីនធឺណិតសម្រាប់ការប្រើប្រាស់លើកដំបូង។";
+                resultText.value = "មានកំហុសក្នុងការអានរូបភាព។ សូមប្រាកដថាឧបករណ៍មានអ៊ីនធឺណិតសម្រាប់ការប្រើប្រាស់លើកដំបូង។";
             });
         }
 
-        // ៣. មុខងារប៊ូតុងចម្លងអត្ថបទ (Copy Text)
         copyBtn.addEventListener('click', () => {
             const textToCopy = resultText.value;
             if (!textToCopy || textToCopy.startsWith('[')) {
@@ -155,7 +146,6 @@
                 return;
             }
             
-            // ប្រើប្រាស់ Clipboard API ដើម្បី Copy
             navigator.clipboard.writeText(textToCopy).then(() => {
                 alert("បានចម្លងអត្ថបទទៅកាន់ Clipboard រួចរាល់!");
             }).catch(err => {
