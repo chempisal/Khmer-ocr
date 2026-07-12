@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="km">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>NextOCR Khmer - កម្មវិធីបំប្លែងអក្សរពីរូបភាព</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans antialiased">
+
+    <header class="bg-blue-600 text-white shadow-md pt-6 pb-4 px-4 sticky top-0 z-50">
+        <div class="max-w-md mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold tracking-wide">NextOCR Khmer</h1>
+                <p class="text-[10px] text-blue-200">ប្រព័ន្ធស្រង់អត្ថបទឆ្លាតវៃ</p>
+            </div>
+            <span class="text-xs bg-blue-700/60 px-2.5 py-1 rounded-full border border-blue-400/30 font-mono">v1.2.0</span>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-4 pb-16">
+        
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200/60">
+            <label for="langSelect" class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">១. ជ្រើសរើសភាសាក្នុងរូបភាព</label>
+            <select id="langSelect" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm font-semibold text-gray-700">
+                <option value="khm">ភាសាខ្មែរ (Khmer)</option>
+                <option value="eng">ភាសាអង់គ្លេស (English)</option>
+                <option value="khm+eng">ខ្មែរ និង អង់គ្លេស រួមគ្នា</option>
+            </select>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200/60 space-y-4">
+            <span class="block text-xs font-bold text-gray-400 uppercase tracking-wider">២. ផ្ទុកឡើងរូបភាព ឬថតរូប</span>
+            
+            <label for="imageInput" class="w-full flex flex-col items-center justify-center h-44 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:bg-gray-50 active:bg-gray-100/70 transition-all">
+                <div class="flex flex-col items-center justify-center text-center px-4">
+                    <div class="bg-blue-50 p-3 rounded-full mb-3 text-blue-600">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <p class="text-sm font-bold text-gray-700">ចុចទីនេះដើម្បី Upload ឬថតរូប</p>
+                    <p class="text-xs text-gray-400 mt-1">គាំទ្រឯកសារ JPG, PNG</p>
+                </div>
+                <input id="imageInput" type="file" accept="image/*" capture="environment" class="hidden" />
+            </label>
+            
+            <div id="previewContainer" class="hidden border-t border-gray-100 pt-4 animate-fade-in">
+                <p class="text-xs font-bold text-gray-400 mb-2">រូបភាពដែលបានជ្រើសរើស៖</p>
+                <div class="relative rounded-xl overflow-hidden border border-gray-200 shadow-sm max-h-52 flex justify-center bg-gray-50">
+                    <img id="imagePreview" src="#" alt="Preview" class="object-contain max-h-52 w-full">
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-200/60 flex flex-col space-y-3">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider">៣. លទ្ធផលទទួលបាន</h3>
+                <span id="statusText" class="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md transition-all">រង់ចាំរូបភាព...</span>
+            </div>
+            
+            <div id="progressContainer" class="hidden w-full bg-gray-100 rounded-full h-2 shadow-inner overflow-hidden animate-pulse">
+                <div id="progressBar" class="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-150" style="width: 0%"></div>
+            </div>
+
+            <textarea id="resultText" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-gray-700 text-sm min-h-[160px] shadow-inner font-medium" placeholder="អត្ថបទដែលស្រង់បានពីក្នុងរូបភាពនឹងបង្ហាញនៅទីនេះ..." readonly></textarea>
+            
+            <button id="copyBtn" class="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-md active:scale-[0.98] active:bg-blue-700 transition flex justify-center items-center gap-2 text-sm">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path></svg>
+                ចម្លងអត្ថបទ (Copy Text)
+            </button>
+        </div>
+    </main>
+
+    <script>
+        const imageInput = document.getElementById('imageInput');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewContainer = document.getElementById('previewContainer');
+        const resultText = document.getElementById('resultText');
+        const statusText = document.getElementById('statusText');
+        const progressContainer = document.getElementById('progressContainer');
+        const progressBar = document.getElementById('progressBar');
+        const langSelect = document.getElementById('langSelect');
+        const copyBtn = document.getElementById('copyBtn');
+
+        // ១. ចាប់យកព្រឹត្តិការណ៍នៅពេលអ្នកប្រើប្រាស់ផ្ទុកឡើងរូបភាព (Upload)
+        imageInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                // បង្ហាញរូបភាព Preview
+                imagePreview.src = event.target.result;
+                previewContainer.classList.remove('hidden');
+                
+                // ចាប់ផ្តើមដំណើរការបំប្លែងរូបភាពទៅជាអក្សរ
+                processOCR(event.target.result);
+            }
+            reader.readAsDataURL(file);
+        });
+
+        // ២. អនុគមន៍ដំណើរការបំប្លែង (OCR Processing)
+        function processOCR(imageSrc) {
+            statusText.innerText = "កំពុងរៀបចំ...";
+            statusText.className = "text-xs font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-md";
+            progressContainer.classList.remove('hidden');
+            resultText.value = "";
+            progressBar.style.width = "0%";
+
+            // ហៅការប្រើប្រាស់ Tesseract.js 
+            Tesseract.recognize(
+                imageSrc,
+                langSelect.value, // ភាសាដែលបានជ្រើសរើស (khm ឬ eng)
+                { 
+                    logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            progressBar.style.width = progress + '%';
+                            statusText.innerText = `កំពុងបំប្លែង... ${progress}%`;
+                        }
+                    }
+                }
+            ).then(({ data: { text } }) => {
+                // ករណីជោគជ័យ
+                statusText.innerText = "ជោគជ័យ!";
+                statusText.className = "text-xs font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-md";
+                progressContainer.classList.add('hidden');
+                
+                if (text.trim() === "") {
+                    resultText.value = "[មិនមានអត្ថបទ ឬអក្សរត្រូវបានរកឃើញនៅក្នុងរូបភាពនេះទេ]";
+                } else {
+                    resultText.value = text.trim();
+                }
+            }).catch(err => {
+                // ករណីមានកំហុសបច្ចេកទេស
+                console.error(err);
+                statusText.innerText = "បរាជ័យ!";
+                statusText.className = "text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-md";
+                progressContainer.classList.add('hidden');
+                resultText.value = "មានកំហុសក្នុងការអានរូបភាព។ សូមប្រាកដថាទូរស័ព្ទរបស់អ្នកមានអ៊ីនធឺណិតសម្រាប់ការប្រើប្រាស់លើកដំបូង។";
+            });
+        }
+
+        // ៣. មុខងារប៊ូតុងចម្លងអត្ថបទ (Copy Text)
+        copyBtn.addEventListener('click', () => {
+            const textToCopy = resultText.value;
+            if (!textToCopy || textToCopy.startsWith('[')) {
+                alert("មិនមានអត្ថបទសម្រាប់ចម្លងទេ!");
+                return;
+            }
+            
+            // ប្រើប្រាស់ Clipboard API ដើម្បី Copy
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                alert("បានចម្លងអត្ថបទទៅកាន់ Clipboard រួចរាល់!");
+            }).catch(err => {
+                alert("មិនអាចចម្លងអត្ថបទបានទេ សូមព្យាយាមម្តងទៀត។");
+            });
+        });
+    </script>
+</body>
+</html>
